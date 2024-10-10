@@ -11,16 +11,16 @@ export const config: Config = {
   },
 
   defaultCollection: {
-    name: "Lorem Ipsum",
-    description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Mauris congue convallis augue in pharetra.",
+    name: "Job Referrals Collection",
+    description: "A collection of job referrals to help you find your next opportunity.",
     image: Placeholder1,
   },
 
   ourStory: {
     title: "Our Story",
-    subTitle: "Innovative Insurance Platform on Aptos",
+    subTitle: "Innovative Job Referral Platform on Aptos",
     description:
-      "Our Insurance Platform Offers Various Insurance Products to Protect Your Assets. We Provide a Secure and Transparent Platform for Buying and Selling Insurance. Join Our Community to Get Started!",
+      "Our platform connects job seekers with potential employers through trusted referrals. We aim to create a transparent and efficient job market. Join our community to get started!",
     discordLink: "https://discord.com",
     images: [Placeholder1, Placeholder2, Placeholder3],
   },
@@ -57,42 +57,39 @@ export const config: Config = {
 
     questions: [
       {
-        title: "What is Micro Insurance?",
+        title: "What is a job referral?",
         description:
-          "Micro insurance is a type of insurance designed to be affordable for low-income individuals or groups, providing coverage for specific risks such as health, life, or property.",
+          "A job referral is a recommendation from a current employee or someone within the industry, suggesting a candidate for a job opening.",
       },
       {
-        title: "How do I purchase an insurance policy?",
-        description: `To purchase an insurance policy, follow these steps:
-        Navigate to the "Buy Insurance" section in the app.
-        Select the type of insurance you need.
-        Fill in the required details and submit your application.
-        Make the payment through the available payment methods.
-        Confirm the transaction in your connected wallet.`,
+        title: "How do I get referred for a job?",
+        description: `To get referred for a job, follow these steps:
+        Create a profile on our platform.
+        Connect with professionals in your desired industry.
+        Request referrals for job openings that match your skills and experience.`,
       },
       {
-        title: "What types of insurance products are available?",
+        title: "What are the benefits of job referrals?",
         description:
-          "We offer a variety of insurance products including health insurance, life insurance, and property insurance. Each product is tailored to meet the specific needs of our customers.",
+          "Job referrals can increase your chances of getting hired, as they come with a recommendation from a trusted source. They can also help you access job openings that may not be publicly advertised.",
       },
       {
-        title: "How can I file a claim?",
-        description: `To file a claim, follow these steps:
-        Navigate to the "File a Claim" section in the app.
-        Provide the necessary details about the incident.
-        Submit any required documentation.
-        Our team will review your claim and get back to you with the next steps.`,
+        title: "How can I refer someone for a job?",
+        description: `To refer someone for a job, follow these steps:
+        Navigate to the "Refer a Candidate" section in the app.
+        Provide the candidate's details and the job opening information.
+        Submit your referral and track its status through the app.`,
       },
       {
-        title: "What should I do if I encounter an issue with my policy?",
-        description: `If you encounter an issue with your policy, consider the following:
-        Ensure that all your details are correctly entered.
-        Refresh the app and check your policy details again.
+        title: "What should I do if I encounter an issue with my referral?",
+        description: `If you encounter an issue with your referral, consider the following:
+        Ensure that all details are correctly entered.
+        Refresh the app and check the referral status again.
         Contact our support team for further assistance.`,
       },
       {
-        title: "How can I view my policy details?",
-        description: `You can view your policy details by navigating to the "My Policies" section of the app. This section will display all your active policies, including coverage details, premium amounts, and expiration dates.`,
+        title: "How can I view my referral status?",
+        description: `You can view your referral status by navigating to the "My Referrals" section of the app. This section will display all your active referrals, including their current status and any feedback from employers.`,
       },
     ],
   },

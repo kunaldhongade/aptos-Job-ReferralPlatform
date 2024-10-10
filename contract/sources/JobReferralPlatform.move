@@ -3,7 +3,6 @@ module my_addrx::JobReferralPlatform {
     use std::aptos_coin::AptosCoin;
     use std::signer;
     use std::vector;
-    use std::timestamp;
     use std::string::String;
 
     const ERR_JOB_NOT_FOUND: u64 = 1;
@@ -45,8 +44,8 @@ module my_addrx::JobReferralPlatform {
         let global_address = Global_Job_List;
 
         if (exists<GlobalJobCollection>(global_address)) {
-            abort(ERR_ALREADY_INITIALIZED);
-        }
+            abort(ERR_ALREADY_INITIALIZED)
+        };
 
         let job_collection = GlobalJobCollection {
             jobs: vector::empty<Job>(),
@@ -117,11 +116,11 @@ module my_addrx::JobReferralPlatform {
                 };
 
                 vector::push_back(&mut job_ref.referrals, new_referral);
-                return;
+                return
             };
             i = i + 1;
         };
-        abort(ERR_JOB_NOT_FOUND);
+        abort(ERR_JOB_NOT_FOUND)
     }
 
     // Employer confirms a hire and releases the finder's fee
@@ -161,15 +160,15 @@ module my_addrx::JobReferralPlatform {
 
                         // Pay the finder's fee to the referrer
                         transfer<AptosCoin>(account, referral_ref.referrer, job_ref.finders_fee);
-                        return;
+                        return
                     };
                     j = j + 1;
                 };
-                abort(ERR_REFERRAL_NOT_FOUND);
+                abort(ERR_REFERRAL_NOT_FOUND)
             };
             i = i + 1;
         };
-        abort(ERR_JOB_NOT_FOUND);
+        abort(ERR_JOB_NOT_FOUND)
     }
 
     // View all job listings
@@ -195,11 +194,11 @@ module my_addrx::JobReferralPlatform {
         while (i < jobs_len) {
             let job_ref = vector::borrow(&collection_ref.jobs, i);
             if (job_ref.id == job_id) {
-                return *job_ref;
+                return *job_ref
             };
             i = i + 1;
         };
-        abort(ERR_JOB_NOT_FOUND);
+        abort(ERR_JOB_NOT_FOUND)
     }
 
     // View referrals for a specific job
@@ -215,10 +214,61 @@ module my_addrx::JobReferralPlatform {
         while (i < jobs_len) {
             let job_ref = vector::borrow(&collection_ref.jobs, i);
             if (job_ref.id == job_id) {
-                return job_ref.referrals;
+                return job_ref.referrals
             };
             i = i + 1;
         };
-        abort(ERR_JOB_NOT_FOUND);
+        abort(ERR_JOB_NOT_FOUND)
+    }
+
+    // View all jobs created by a specific employer
+    #[view]
+    public fun view_jobs_by_employer(employer: address): vector<Job> acquires GlobalJobCollection {
+        let global_address = Global_Job_List;
+        assert!(exists<GlobalJobCollection>(global_address), ERR_NO_ACTIVE_JOBS);
+
+        let collection_ref = borrow_global<GlobalJobCollection>(global_address);
+        let result = vector::empty<Job>();
+
+        let jobs_len = vector::length(&collection_ref.jobs);
+        let i = 0;
+
+        while (i < jobs_len) {
+            let job_ref = vector::borrow(&collection_ref.jobs, i);
+            if (job_ref.employer == employer) {
+                vector::push_back(&mut result, *job_ref);
+            };
+            i = i + 1;
+        };
+        result
+    }
+
+    // View all referrals done by a specific address
+    #[view]
+    public fun view_referrals_by_referrer(referrer: address): vector<Referral> acquires GlobalJobCollection {
+        let global_address = Global_Job_List;
+        assert!(exists<GlobalJobCollection>(global_address), ERR_NO_ACTIVE_JOBS);
+
+        let collection_ref = borrow_global<GlobalJobCollection>(global_address);
+        let result = vector::empty<Referral>();
+
+        let jobs_len = vector::length(&collection_ref.jobs);
+        let i = 0;
+
+        while (i < jobs_len) {
+            let job_ref = vector::borrow(&collection_ref.jobs, i);
+            let referrals_len = vector::length(&job_ref.referrals);
+            let j = 0;
+
+            while (j < referrals_len) {
+                let referral_ref = vector::borrow(&job_ref.referrals, j);
+                if (referral_ref.referrer == referrer) {
+                    vector::push_back(&mut result, *referral_ref);
+                };
+                j = j + 1;
+            };
+            i = i + 1;
+        };
+        result
     }
 }
