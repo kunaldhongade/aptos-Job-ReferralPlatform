@@ -1,121 +1,143 @@
-# MicroInsuranceSystem Smart Contract
+# JobReferralPlatform Smart Contract
 
-## Overview
+The `JobReferralPlatform` smart contract provides a decentralized platform where employers can post jobs and users can refer candidates. Referrers are rewarded with a finder’s fee upon a successful hire. The contract is built on the Aptos blockchain, ensuring transparent and secure job referrals and payments.
 
-This Move module provides a decentralized micro-insurance system, enabling users to purchase insurance policies, claim payouts, and manage insurance policies through smart contracts on the Aptos blockchain. The module features global storage for policies and includes essential insurance functionalities such as policy creation, premium payments, claim requests, verification, and payouts.
+## Features:
 
-## Key Features
+- Employers can create job listings with a defined finder’s fee.
+- Users can refer candidates for jobs with referral messages.
+- Employers can confirm a hire, releasing the finder’s fee to the referrer.
+- View all jobs, job details, referrals, and job history by employer or referrer.
 
-- **Global Policy Management**: Stores all policies under a single global address.
-- **Policy Creation**: Allows creators to issue new policies with parameters like premium amount, policy type, and maximum claimable amount.
-- **Policy Purchase**: Customers can purchase a pre-defined insurance policy by paying the specified premium.
-- **Claim Process**: Insured customers can request and receive claim payouts upon verification.
-- **Claim Verification**: Policy creators verify and approve customer claims.
-- **Views for Policies**: Customers and creators can view policies based on ID, creator, or customer.
+---
 
-## Installation & Usage
+## Module: `my_addrx::JobReferralPlatform`
 
-### 1. Initialize Global Policy System
+### Dependencies:
 
-Before creating or managing policies, the global policy system must be initialized by invoking:
+- **std::coin::transfer**: To transfer AptosCoin as payment for referrals.
+- **aptos_coin::AptosCoin**: Used for finder's fees in Aptos tokens.
+- **signer**: To authorize actions by employers and referrers.
+- **vector**: For managing lists of jobs and referrals.
+- **string::String**: To store job and referral descriptions.
 
-```move
-init_global_policy_system(account: &signer)
-```
+### Constants:
 
-This initializes a collection that will store all policies.
+- **Error Codes**:
 
-### 2. Create a New Policy
+  - `ERR_JOB_NOT_FOUND`: Job does not exist.
+  - `ERR_UNAUTHORIZED`: Unauthorized access.
+  - `ERR_REFERRAL_NOT_FOUND`: Referral does not exist.
+  - `ERR_ALREADY_HIRED`: The job has already been filled.
+  - `ERR_NO_ACTIVE_JOBS`: No active jobs available.
+  - `ERR_ALREADY_INITIALIZED`: The platform is already initialized.
 
-Creators can define new policies with attributes such as description, premium amount, payment frequency, and claimable limits:
+- **Global Job List Address**:
+  - A global address (`Global_Job_List`) stores all job listings.
 
-```move
-create_policy(
-  account: &signer,
-  description: String,
-  premium_amount: u64,
-  yearly: bool,
-  max_claimable: u64,
-  type_of_policy: String
-)
-```
+---
 
-### 3. Purchase a Policy
+## Structs:
 
-Users (customers) can purchase a policy by its unique ID. This action transfers the premium amount to the policy creator:
+1. **`Job`**:
 
-```move
-purchase_policy(account: &signer, policy_id: u64)
-```
+   - Represents a job listing with the following fields:
+     - `id`: Unique ID for the job.
+     - `employer`: The address of the employer.
+     - `title`: Job title.
+     - `description`: Job description.
+     - `finders_fee`: The amount of Aptos tokens as a finder’s fee.
+     - `is_filled`: Whether the job is filled.
+     - `referrals`: List of referrals for the job.
 
-### 4. Request a Claim
+2. **`Referral`**:
 
-After purchasing a policy, customers can request a claim under the policy:
+   - Represents a referral made by a user with these fields:
+     - `referrer`: Address of the referrer.
+     - `candidate`: Address of the referred candidate.
+     - `referral_message`: Custom message accompanying the referral.
+     - `is_hired`: Indicates whether the candidate was hired.
 
-```move
-request_claim(account: &signer, policy_id: u64)
-```
+3. **`GlobalJobCollection`**:
+   - Stores all jobs and tracks the last job ID.
+     - `jobs`: List of all job postings.
+     - `last_job_id`: Tracks the ID of the most recently added job.
 
-### 5. Verify a Claim
+---
 
-The policy creator must verify and approve a claim request:
+## Public Entry Functions:
 
-```move
-verify_claim(account: &signer, policy_id: u64, customer: address)
-```
+### 1. **`init_job_platform(account: &signer)`**:
 
-### 6. Payout for a Claim
+Initializes the platform by creating the `GlobalJobCollection` at the global address. Only called once.
 
-Once a claim is verified, the policy creator can initiate the payout process, transferring the claimable amount to the customer:
+### 2. **`create_job(account: &signer, title: String, description: String, finders_fee: u64)`**:
 
-```move
-payout_claim(account: &signer, policy_id: u64)
-```
+Allows an employer to create a new job listing. The job is added to the global collection with the specified title, description, and finder's fee.
 
-### 7. View All Policies
+### 3. **`refer_candidate(account: &signer, job_id: u64, candidate: address, referral_message: String)`**:
 
-Retrieve a list of all policies in the system:
+Allows users to refer a candidate for an open job. The referral is attached to the job listing, and a message can be included by the referrer.
 
-```move
-view_all_policies(): vector<Policy>
-```
+### 4. **`confirm_hire(account: &signer, job_id: u64, candidate: address)`**:
 
-### 8. View Policy by ID
+Allows the employer to confirm a hire for a candidate. Upon confirmation, the referrer receives the finder’s fee, and the job is marked as filled.
 
-Retrieve a specific policy by its ID:
+---
 
-```move
-view_policy_by_id(policy_id: u64): Policy
-```
+## View Functions:
 
-### 9. View Policies by Creator
+### 1. **`view_all_jobs()`**:
 
-Retrieve all policies created by a specific creator:
+Returns a list of all job listings.
 
-```move
-view_policies_by_creator(creator: address): vector<Policy>
-```
+### 2. **`view_job_by_id(job_id: u64)`**:
 
-### 10. View Policies by Customer
+Returns details of a specific job by job ID.
 
-Retrieve all policies a specific customer has purchased:
+### 3. **`view_referrals(job_id: u64)`**:
 
-```move
-view_policies_by_customer(customer: address): vector<Policy>
-```
+Returns a list of all referrals for a specific job.
 
-## Error Codes
+### 4. **`view_jobs_by_employer(employer: address)`**:
 
-- `ERR_POLICY_NOT_FOUND (1)`: The specified policy does not exist.
-- `ERR_NOT_CUSTOMER (2)`: The caller is not a customer of the policy.
-- `ERR_PREMIUM_NOT_PAID (3)`: The premium has not been paid for the policy.
-- `ERR_CLAIM_ALREADY_MADE (4)`: The claim has already been made.
-- `ERR_NO_POLICIES (5)`: No policies exist in the system.
-- `ERR_ALREADY_INITIALIZED (6)`: The global policy system has already been initialized.
-- `ERR_CLAIM_NOT_ALLOWED (7)`: The claim is not allowed (e.g., not verified).
-- `ERR_UNAUTHORIZED (8)`: The caller is not authorized to perform the action.
+Lists all jobs created by a specific employer.
 
-## Dependencies
+### 5. **`view_referrals_by_referrer(referrer: address)`**:
 
-- **AptosCoin**: The contract utilizes the native Aptos coin for premium payments and claim payouts.
-- **Std Modules**: Includes standard modules like `signer`, `string`, `vector`, and `coin`.
+Lists all referrals made by a specific referrer.
+
+---
+
+## Frontend Integration
+
+### Functionalities:
+
+- **Create Job**: Employers can create job listings by specifying job details such as title, description, and finder’s fee.
+- **Refer Candidate**: Users can refer candidates for jobs by providing the candidate’s address and a referral message.
+- **Confirm Hire**: Employers can confirm a successful hire, releasing the finder’s fee to the referrer.
+- **View Jobs**: Users can view available jobs and referrals.
+
+### Tools and Libraries:
+
+- **React (JavaScript/TypeScript)**: For building the frontend UI.
+- **Aptos SDK**: To interact with the smart contract on the blockchain.
+- **Tailwind CSS**: For responsive styling of the frontend.
+- **Ant Design**: UI components for forms, buttons, and job listings.
+
+---
+
+## Sample Workflow:
+
+1. **Employer**: Creates a job listing.
+2. **Referrer**: Refers a candidate for the job.
+3. **Employer**: Confirms the hire of the referred candidate, releasing the finder’s fee to the referrer.
+
+---
+
+## Deployment Steps:
+
+1. **Clone the repository**.
+2. **Install dependencies**: Run `npm install` or `yarn install` to set up the frontend.
+3. **Start the frontend**: Run `npm run dev` or `yarn run dev` to launch the development server.
+4. **Deploy the contract**: Use the Aptos testnet for deployment and interaction with the contract.
