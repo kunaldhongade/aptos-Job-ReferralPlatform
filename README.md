@@ -1,15 +1,14 @@
-# Micro-Insurance System - Frontend
+# JobReferralPlatform - Frontend
 
-This is the frontend for the **Micro-Insurance System** built on the **Aptos Blockchain**. The platform enables users to purchase micro-insurance policies, request claims, and receive payouts, with all actions securely managed via smart contracts.
+This is the frontend for the **JobReferralPlatform** built on the **Aptos Blockchain**. The platform allows employers to post job listings, users to refer candidates, and employers to confirm hires, rewarding referrers with a finder’s fee through smart contract interactions.
 
 ## Key Features
 
-- **View Available Policies**: Users can browse through a list of pre-created insurance policies available for purchase.
-- **Purchase Insurance Policies**: Users can purchase micro-insurance policies directly using Aptos native token (**APT**).
-- **Claim Requests**: Users can request insurance claims after purchasing a policy.
-- **Claim Verification**: Claims are reviewed and verified by policy creators.
-- **Payouts**: Verified claims trigger payouts of the specified claimable amount directly to the user.
-- **Policy Management**: Policy creators can view and manage policies and verify customer claims.
+- **View Available Jobs**: Users can browse job listings posted by employers.
+- **Refer Candidates**: Users can refer candidates to posted jobs with custom messages.
+- **Confirm Hire**: Employers can confirm a hire and automatically transfer the finder’s fee to the referrer.
+- **Manage Jobs**: Employers can view and manage their posted jobs and candidate referrals.
+- **Transaction Handling**: All payments and referrals are securely handled through smart contracts on the Aptos blockchain.
 
 ## Prerequisites
 
@@ -26,7 +25,8 @@ Before running the project, ensure you have the following installed:
 First, clone the project repository to your local machine:
 
 ```bash
-cd micro-insurance-system
+git clone https://github.com/your-repo/job-referral-platform.git
+cd job-referral-platform
 ```
 
 ### 2. Install Dependencies
@@ -48,12 +48,12 @@ yarn install
 You need to configure the environment variables for the frontend to interact with the Aptos blockchain. Create a `.env` file in the project root and add the following variables:
 
 ```bash
-PROJECT_NAME=MicroInsuranceSystem
+PROJECT_NAME=JobReferralPlatform
 VITE_APP_NETWORK=testnet
 VITE_MODULE_ADDRESS=0x<your_contract_address>
 ```
 
-Adjust the `NODE_URL` and `FAUCET_URL` if you are using **Testnet** or **Mainnet** instead of Devnet.
+Adjust the `VITE_APP_NETWORK` and `VITE_MODULE_ADDRESS` as per your deployment setup.
 
 ### 4. Run the Development Server
 
@@ -75,40 +75,32 @@ The app will be available at `http://localhost:5173`.
 
 ### 1. Connect Wallet
 
-Upon opening the application, you'll be prompted to connect your Aptos wallet (e.g., Petra Wallet). This allows you to interact with the blockchain and perform operations such as purchasing policies and requesting claims.
+Upon opening the application, you'll be prompted to connect your Aptos wallet (e.g., Petra Wallet). This allows you to interact with the blockchain and perform operations such as referring candidates and posting jobs.
 
-### 2. View Available Policies
+### 2. View Available Jobs
 
-Users can browse the **Policies** section to view the available insurance policies. Each policy will display details such as:
+Users can browse the **Jobs** section to view the available job listings. Each listing will display details such as:
 
-- Policy description
-- Premium amount
-- Maximum claimable amount
-- Type (e.g., health, auto)
-- Yearly or one-time payment options
+- Job title and description
+- Finder's fee amount (paid in Aptos native token **APT**)
+- Job posting date
+- Employer details
 
-### 3. Purchase Policy
+### 3. Refer a Candidate
 
-To purchase an insurance policy:
+To refer a candidate for a job:
 
-- Select the policy you want to purchase.
-- The platform will prompt you to pay the premium amount in **APT** via your connected Aptos wallet.
-- Once purchased, the policy will be added to your list of active policies.
+- Select the job you want to refer a candidate for.
+- Enter the candidate’s details and provide a referral message.
+- Submit the referral, which will be recorded on the blockchain and made available for the employer to review.
 
-### 4. Request Claim
+### 4. Confirm Hire (Employer)
 
-To request an insurance claim:
+Employers can confirm hires by:
 
-- Navigate to **My Policies** and select the policy you want to claim.
-- Click on **Request Claim**. The request will be submitted to the policy creator for verification.
-
-### 5. Claim Verification and Payout
-
-For policy creators, after receiving a claim request:
-
-- Go to **Manage Policies** and select the relevant policy.
-- Review the claim request and click **Verify** if the claim is legitimate.
-- Once verified, the claim will be automatically paid out to the customer.
+- Navigating to the **Manage Jobs** section.
+- Selecting the job listing and reviewing the referrals.
+- Confirming the hire, which will trigger the release of the finder’s fee to the referrer’s wallet.
 
 ## Scripts
 
@@ -128,4 +120,4 @@ The project uses the following key dependencies:
 
 ## Conclusion
 
-This frontend allows users to seamlessly interact with the **Micro-Insurance System**, providing a decentralized way to manage policies, request claims, and handle payouts. With a user-friendly interface and blockchain security, users and policy creators can manage their insurance needs transparently.
+This frontend allows users to seamlessly interact with the **JobReferralPlatform**, offering a decentralized and transparent way for employers to manage job postings and for referrers to earn finder’s fees through secure blockchain transactions.
