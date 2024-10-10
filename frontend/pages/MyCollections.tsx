@@ -5,86 +5,53 @@ import { MODULE_ADDRESS } from "@/constants";
 import { aptosClient } from "@/utils/aptosClient";
 import { InputViewFunctionData } from "@aptos-labs/ts-sdk";
 import { useWallet } from "@aptos-labs/wallet-adapter-react";
-import { Form, Input, message, Table, Tag, Typography } from "antd";
+import { Form, Input, InputNumber, message, Table, Tag, Typography } from "antd";
 import "dotenv/config";
 import { useEffect, useState } from "react";
 const { Column } = Table;
 const { Paragraph } = Typography;
 
-interface Policy {
-  id: number;
+interface Job {
+  id: string;
   description: string;
-  premium_amount: number;
-  yearly: boolean;
-  type_of_policy: string;
-  claimable_amount: number;
-  max_claimable: number;
-  total_premium_collected: number;
-  creator: string;
-  customers: {
-    customer: string;
-    is_claimed: boolean;
-    is_requested: boolean;
-    is_verified: boolean;
-    premium_paid: boolean;
+  finders_fee: number;
+  title: string;
+  employer: string;
+  referrals: {
+    candidate: string;
+    is_hired: boolean;
+    referral_message: string;
+    referrer: string;
   }[];
-  policy_id: number;
 }
 
 export function MyCollections() {
   const { account, signAndSubmitTransaction } = useWallet();
-  const [policyById, setPolicyById] = useState<Policy | null>(null);
-  const [policyID, setPolicyID] = useState<number | null>(null);
-  const [policies, setPolicies] = useState<Policy[]>([]);
-  const [policyAppliedBy, setPolicyAppliedBy] = useState<Policy[]>([]);
 
+  const [jobsReferredBy, setJobsReferredBy] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const convertAmountFromOnChainToHumanReadable = (value: number, decimal: number) => {
     return value / Math.pow(10, decimal);
   };
 
-  const handleRequestClaim = async (values: { policy_id: number }) => {
+  const handleReferCandidate = async (values: {
+    job_id: number;
+    candidate_address: string;
+    referral_message: string;
+  }) => {
     try {
       const transaction = await signAndSubmitTransaction({
         sender: account?.address,
         data: {
-          function: `${MODULE_ADDRESS}::MicroInsuranceSystem::request_claim`,
-          functionArguments: [values.policy_id],
+          function: `${MODULE_ADDRESS}::JobReferralPlatform::refer_candidate`,
+          functionArguments: [values.job_id, values.candidate_address, values.referral_message],
         },
       });
 
       await aptosClient().waitForTransaction({ transactionHash: transaction.hash });
-      message.success("Requested for Verification!");
-      fetchAllPoliciesOnPlatform();
-      fetchAllPoliciesByCustomer();
-    } catch (error) {
-      if (typeof error === "object" && error !== null && "code" in error && (error as { code: number }).code === 4001) {
-        message.error("Transaction rejected by user.");
-      } else {
-        if (error instanceof Error) {
-          console.error(`Transaction failed: ${error.message}`);
-        } else {
-          console.error("Transaction failed: Unknown error");
-        }
-        console.error("Transaction Error:", error);
-      }
-      console.log("Error Requesting Verification.", error);
-    }
-  };
-
-  const handlePurchasePolicy = async (values: { policy_id: number }) => {
-    try {
-      const transaction = await signAndSubmitTransaction({
-        sender: account?.address,
-        data: {
-          function: `${MODULE_ADDRESS}::MicroInsuranceSystem::purchase_policy`,
-          functionArguments: [values.policy_id],
-        },
-      });
-
-      await aptosClient().waitForTransaction({ transactionHash: transaction.hash });
-      message.success("Purchase Successful!");
-      fetchAllPoliciesOnPlatform();
-      fetchAllPoliciesByCustomer();
+      message.success("Refer  Successful!");
+      fetchAllJobsONPlatform();
+      fetchAllJobsReferredBy();
     } catch (error) {
       if (typeof error === "object" && error !== null && "code" in error && (error as { code: number }).code === 4001) {
         message.error("Transaction rejected by user.");
@@ -100,135 +67,94 @@ export function MyCollections() {
     }
   };
 
-  const fetchAllPoliciesOnPlatform = async () => {
+  const fetchAllJobsONPlatform = async () => {
     try {
       const payload: InputViewFunctionData = {
-        function: `${MODULE_ADDRESS}::MicroInsuranceSystem::view_all_policies`,
+        function: `${MODULE_ADDRESS}::JobReferralPlatform::view_all_jobs`,
         functionArguments: [],
       };
 
       const result = await aptosClient().view({ payload });
 
-      const policyList = result[0];
+      const jobList = result[0];
 
-      if (Array.isArray(policyList)) {
-        setPolicies(
-          policyList.map((policy) => ({
-            claimable_amount: policy.claimable_amount,
-            creator: policy.creator,
-            customers: policy.customers.map(
-              (customer: {
-                customer: string;
-                is_claimed: boolean;
-                is_requested: boolean;
-                is_verified: boolean;
-                premium_paid: boolean;
-              }) => ({
-                customer: customer.customer,
-                is_claimed: customer.is_claimed,
-                is_requested: customer.is_requested,
-                is_verified: customer.is_verified,
-                premium_paid: customer.premium_paid,
+      if (Array.isArray(jobList)) {
+        setJobs(
+          jobList.map((job) => ({
+            id: job.id,
+            description: job.description,
+            finders_fee: job.finders_fee, // Assuming finders_fee is part of the job or default to 0
+            title: job.title, // Assuming title is part of the job or default to "Unknown"
+            employer: job.employer, // Assuming employer is the employer
+            referrals: job.referrals.map(
+              (referral: { candidate: string; is_hired: boolean; referral_message: string; referrer: string }) => ({
+                candidate: referral.candidate,
+                is_hired: referral.is_hired, // Assuming is_hired is equivalent to is_claimed
+                referral_message: referral.referral_message, // Assuming no referral message available
+                referrer: referral.referrer, // Assuming referrer is the referrer
               }),
             ),
-            description: policy.description,
-            policy_id: policy.policy_id,
-            id: policy.id,
-            max_claimable: policy.max_claimable,
-            premium_amount: policy.premium_amount,
-            total_premium_collected: policy.total_premium_collected,
-            type_of_policy: policy.type_of_policy,
-            yearly: policy.yearly,
           })),
         );
       } else {
-        setPolicies([]);
+        setJobs([]);
       }
     } catch (error) {
       console.error("Failed to get Policies by address:", error);
     }
   };
-  const handleFetchPolicyById = () => {
-    if (policyID !== null) {
-      fetchPolicyById(policyID);
-    } else {
-      message.error("Please enter a valid Payments ID.");
-    }
-  };
-
-  const fetchPolicyById = async (policy_id: number) => {
-    try {
-      const payload: InputViewFunctionData = {
-        function: `${MODULE_ADDRESS}::MicroInsuranceSystem::view_policy_by_id`,
-        functionArguments: [policy_id],
-      };
-      const result = await aptosClient().view({ payload });
-      const fetchedJob = result[0] as Policy;
-      setPolicyById(fetchedJob);
-    } catch (error) {
-      console.error("Failed to fetch Policy by id:", error);
-    }
-  };
-
-  const fetchAllPoliciesByCustomer = async () => {
+  const fetchAllJobsReferredBy = async () => {
     try {
       const WalletAddr = account?.address;
+      if (!WalletAddr) {
+        console.error("Wallet address is not available.");
+        return;
+      }
+
       const payload: InputViewFunctionData = {
-        function: `${MODULE_ADDRESS}::MicroInsuranceSystem::view_policies_by_customer`,
+        function: `${MODULE_ADDRESS}::JobReferralPlatform::view_referrals_by_referrer`,
         functionArguments: [WalletAddr],
       };
 
       const result = await aptosClient().view({ payload });
 
-      const policyList = result[0];
+      const jobList = result[0];
 
-      if (Array.isArray(policyList)) {
-        setPolicyAppliedBy(
-          policyList.map((policy) => ({
-            claimable_amount: policy.claimable_amount,
-            creator: policy.creator,
-            customers: policy.customers.map(
-              (customer: {
-                customer: string;
-                is_claimed: boolean;
-                is_requested: boolean;
-                is_verified: boolean;
-                premium_paid: boolean;
-              }) => ({
-                customer: customer.customer,
-                is_claimed: customer.is_claimed,
-                is_requested: customer.is_requested,
-                is_verified: customer.is_verified,
-                premium_paid: customer.premium_paid,
+      if (Array.isArray(jobList)) {
+        setJobsReferredBy(
+          jobList.map((job) => ({
+            id: job.id,
+            description: job.description,
+            finders_fee: job.finders_fee,
+            title: job.title,
+            employer: job.employer,
+            referrals: job.referrals.map(
+              (referral: { candidate: string; is_hired: boolean; referral_message: string; referrer: string }) => ({
+                candidate: referral.candidate,
+                is_hired: referral.is_hired,
+                referral_message: referral.referral_message,
+                referrer: referral.referrer,
               }),
             ),
-            description: policy.description,
-            policy_id: policy.policy_id,
-            id: policy.id,
-            max_claimable: policy.max_claimable,
-            premium_amount: policy.premium_amount,
-            total_premium_collected: policy.total_premium_collected,
-            type_of_policy: policy.type_of_policy,
-            yearly: policy.yearly,
           })),
         );
       } else {
-        setPolicyAppliedBy([]);
+        setJobsReferredBy([]);
       }
     } catch (error) {
-      console.error("Failed to get Policies by address:", error);
+      console.error("Failed to get referrals by referrer:", error);
     }
   };
 
   useEffect(() => {
-    fetchAllPoliciesOnPlatform();
-    fetchAllPoliciesByCustomer();
+    fetchAllJobsONPlatform();
+    fetchAllJobsReferredBy();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [account, policies, policyAppliedBy]);
+  }, [account]);
 
   return (
     <>
-      <LaunchpadHeader title="All Policies" />
+      <LaunchpadHeader title="All References" />
       <div className="flex flex-col items-center justify-center px-4 py-2 gap-4 max-w-screen-xl mx-auto">
         <div className="w-full flex flex-col gap-y-4">
           <Card>
@@ -236,20 +162,21 @@ export function MyCollections() {
               <CardDescription>All Available Policies</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table dataSource={policies} rowKey="" className="max-w-screen-xl mx-auto">
+              <Table dataSource={jobs} rowKey="id" className="max-w-screen-xl mx-auto">
                 <Column title="ID" dataIndex="id" />
-                <Column title="Type" dataIndex="type_of_policy" responsive={["md"]} />
+                <Column title="Title" dataIndex="title" responsive={["md"]} />
                 <Column
-                  title="Premium Amount"
-                  dataIndex="premium_amount"
-                  render={(premium_amount: number) => convertAmountFromOnChainToHumanReadable(premium_amount, 8)}
+                  title="Finder's Fee"
+                  dataIndex="finders_fee"
+                  render={(finders_fee: number) => convertAmountFromOnChainToHumanReadable(finders_fee, 8)}
+                  responsive={["md"]}
                 />
-                <Column title="Creator" dataIndex="creator" render={(creator: string) => creator.substring(0, 6)} />
+                <Column title="Employer" dataIndex="employer" render={(employer: string) => employer.substring(0, 6)} />
                 <Column
                   title="Description"
                   dataIndex="description"
                   responsive={["md"]}
-                  render={(creator: string) => creator.substring(0, 300)}
+                  render={(description: string) => description.substring(0, 300)}
                 />
               </Table>
             </CardContent>
@@ -257,11 +184,11 @@ export function MyCollections() {
 
           <Card>
             <CardHeader>
-              <CardDescription>Purchase Policy</CardDescription>
+              <CardDescription>Refer Candidate</CardDescription>
             </CardHeader>
             <CardContent>
               <Form
-                onFinish={handlePurchasePolicy}
+                onFinish={handleReferCandidate}
                 labelCol={{
                   span: 4.04,
                 }}
@@ -276,13 +203,31 @@ export function MyCollections() {
                   padding: "1.7rem",
                 }}
               >
-                <Form.Item label="Policy ID" name="policy_id" rules={[{ required: true }]}>
-                  <Input placeholder="eg. 1001" />
+                <Form.Item
+                  label="Job ID"
+                  name="job_id"
+                  rules={[{ required: true, message: "Please input the job ID!" }]}
+                >
+                  <InputNumber min={1} placeholder="Job ID" style={{ width: "100%" }} />
+                </Form.Item>
+                <Form.Item
+                  label="Candidate Address"
+                  name="candidate_address"
+                  rules={[{ required: true, message: "Please input the candidate's address!" }]}
+                >
+                  <Input placeholder="Candidate Address" />
+                </Form.Item>
+                <Form.Item
+                  label="Referral Message"
+                  name="referral_message"
+                  rules={[{ required: true, message: "Please input the referral message!" }]}
+                >
+                  <Input.TextArea placeholder="Referral Message" rows={4} />
                 </Form.Item>
 
                 <Form.Item>
                   <Button variant="submit" size="lg" className="text-base w-full" type="submit">
-                    Purchase Policy
+                    Refer Candidate
                   </Button>
                 </Form.Item>
               </Form>
@@ -291,101 +236,56 @@ export function MyCollections() {
 
           <Card>
             <CardHeader>
-              <CardDescription>View Policy By ID</CardDescription>
+              <CardDescription>Get Referrals by You</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="p-2">
-                <Input
-                  placeholder="Enter Policy ID"
-                  type="number"
-                  value={policyID || ""}
-                  onChange={(e) => setPolicyID(Number(e.target.value))}
-                  style={{ marginBottom: 16 }}
-                />
-                <Button
-                  onClick={handleFetchPolicyById}
-                  variant="submit"
-                  size="lg"
-                  className="text-base w-full"
-                  type="submit"
-                >
-                  Fetch Policy
-                </Button>
-                {policyById && (
-                  <Card key={policyById.policy_id} className="mb-6 shadow-lg p-4">
-                    <p className="text-sm text-gray-500 mb-4">Policy ID: {policyById.policy_id}</p>
-                    <Card style={{ marginTop: 16, padding: 16 }}>
-                      <div className="p-2">
-                        <Card className="mb-6 shadow-lg p-4">
-                          <p className="text-sm text-gray-500 mb-4">Policy ID: {policyById.policy_id}</p>
+                {jobsReferredBy.length > 0 ? (
+                  jobsReferredBy.map((job, index) => (
+                    <Card key={index} className="mb-6 shadow-lg p-4">
+                      <p className="text-sm text-gray-500 mb-4">Job ID: {job.id}</p>
+                      <Paragraph>
+                        <strong>Title:</strong> {job.title}
+                      </Paragraph>
+                      <Paragraph>
+                        <strong>Employer:</strong> <Tag>{job.employer}</Tag>
+                      </Paragraph>
+                      <Paragraph>
+                        <strong>Finder's Fee:</strong>{" "}
+                        <Tag>{convertAmountFromOnChainToHumanReadable(job.finders_fee, 8)}</Tag>
+                      </Paragraph>
+                      <Paragraph>
+                        <strong>Description:</strong> {job.description}
+                      </Paragraph>
+                      <Paragraph>
+                        <strong>Referrals:</strong>
+                        {job.referrals.length > 0 ? (
                           <Card style={{ marginTop: 16, padding: 16 }}>
-                            <div>
-                              <Paragraph>
-                                <strong>Type:</strong> {policyById.type_of_policy}
-                              </Paragraph>
-                              <Paragraph>
-                                <strong>Creator:</strong> <Tag>{policyById.creator}</Tag>
-                              </Paragraph>
-                              <Paragraph>
-                                <strong>Premium Amount:</strong>{" "}
-                                <Tag>{convertAmountFromOnChainToHumanReadable(policyById.premium_amount, 8)}</Tag>
-                              </Paragraph>
-
-                              <Paragraph>
-                                <strong>Description:</strong> {policyById.description}
-                              </Paragraph>
-
-                              <Paragraph>
-                                <strong>Claimable Amount:</strong>{" "}
-                                <Tag>{convertAmountFromOnChainToHumanReadable(policyById.max_claimable, 8)}</Tag>
-                              </Paragraph>
-
-                              <Paragraph>
-                                <strong>Total Premium Collected:</strong>{" "}
-                                <Tag>
-                                  {convertAmountFromOnChainToHumanReadable(policyById.total_premium_collected, 8)}
-                                </Tag>
-                              </Paragraph>
-
-                              <Paragraph>
-                                <strong>Payment Type:</strong> <Tag>{policyById.customers.length}</Tag>
-                              </Paragraph>
-
-                              <Paragraph>
-                                <strong>Total Customers</strong> <Tag>{policyById.yearly ? "Annually" : "Once"}</Tag>
-                              </Paragraph>
-
-                              {policyById.customers.length > 0 ? (
-                                <Card style={{ marginTop: 16, padding: 16 }}>
-                                  {policyById.customers.map((customer, idx) => (
-                                    <div key={idx} className="mb-4">
-                                      <Paragraph>
-                                        <strong>Customer:</strong> <Tag>{customer.customer}</Tag>
-                                      </Paragraph>
-                                      <Paragraph>
-                                        <strong>Claimed:</strong> <Tag>{customer.is_claimed ? "Yes" : "No"}</Tag>
-                                      </Paragraph>
-                                      <Paragraph>
-                                        <strong>Requested:</strong> <Tag>{customer.is_requested ? "Yes" : "No"}</Tag>
-                                      </Paragraph>
-                                      <Paragraph>
-                                        <strong>Verified:</strong> <Tag>{customer.is_verified ? "Yes" : "No"}</Tag>
-                                      </Paragraph>
-                                      <Paragraph>
-                                        <strong>Premium Paid:</strong> <Tag>{customer.premium_paid ? "Yes" : "No"}</Tag>
-                                      </Paragraph>
-                                    </div>
-                                  ))}
-                                </Card>
-                              ) : (
-                                <Paragraph>No Customers Found for this Policy. </Paragraph>
-                              )}
-                            </div>
+                            {job.referrals.map((referral, idx) => (
+                              <div key={idx} className="mb-4">
+                                <Paragraph>
+                                  <strong>Candidate:</strong> <Tag>{referral.candidate}</Tag>
+                                </Paragraph>
+                                <Paragraph>
+                                  <strong>Hired:</strong> <Tag>{referral.is_hired ? "Yes" : "No"}</Tag>
+                                </Paragraph>
+                                <Paragraph>
+                                  <strong>Referral Message:</strong> {referral.referral_message}
+                                </Paragraph>
+                                <Paragraph>
+                                  <strong>Referrer:</strong> <Tag>{referral.referrer}</Tag>
+                                </Paragraph>
+                              </div>
+                            ))}
                           </Card>
-                        </Card>
-                      </div>
+                        ) : (
+                          <Paragraph>No Referrals Found for this Job.</Paragraph>
+                        )}
+                      </Paragraph>
                     </Card>
-                  </Card>
+                  ))
+                ) : (
+                  <Paragraph>No Jobs Referred by You.</Paragraph>
                 )}
               </div>
             </CardContent>
@@ -393,166 +293,51 @@ export function MyCollections() {
 
           <Card>
             <CardHeader>
-              <CardDescription>Get Policies Purchased By You</CardDescription>
+              <CardDescription>All Jobs on the Platform</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="p-2">
-                {policyAppliedBy.map((policy, index) => (
+                {jobs.map((job, index) => (
                   <Card key={index} className="mb-6 shadow-lg p-4">
-                    <p className="text-sm text-gray-500 mb-4">Policy ID: {policy.policy_id}</p>
-                    <Card style={{ marginTop: 16, padding: 16 }}>
-                      {policy && (
-                        <div>
-                          <Paragraph>
-                            <strong>Type:</strong> {policy.type_of_policy}
-                          </Paragraph>
-                          <Paragraph>
-                            <strong>Creator:</strong> <Tag>{policy.creator}</Tag>
-                          </Paragraph>
-                          <Paragraph>
-                            <strong>Premium Amount:</strong>{" "}
-                            <Tag>{convertAmountFromOnChainToHumanReadable(policy.premium_amount, 8)}</Tag>
-                          </Paragraph>
-
-                          <Paragraph>
-                            <strong>Description:</strong> {policy.description}
-                          </Paragraph>
-
-                          <Paragraph>
-                            <strong>Claimable Amount:</strong>{" "}
-                            <Tag>{convertAmountFromOnChainToHumanReadable(policy.max_claimable, 8)}</Tag>
-                          </Paragraph>
-
-                          <Paragraph>
-                            <strong>Total Premium Collected:</strong>{" "}
-                            <Tag>{convertAmountFromOnChainToHumanReadable(policy.total_premium_collected, 8)}</Tag>
-                          </Paragraph>
-
-                          <Paragraph>
-                            <strong>Payment Type:</strong> <Tag>{policy.customers.length}</Tag>
-                          </Paragraph>
-
-                          <Paragraph>
-                            <strong>Total Customers</strong> <Tag>{policy.yearly ? "Annually" : "Once"}</Tag>
-                          </Paragraph>
-
-                          {policy.customers.length > 0 ? (
-                            <Card style={{ marginTop: 16, padding: 16 }}>
-                              {policy.customers.map((customer, idx) => (
-                                <div key={idx} className="mb-4">
-                                  <Paragraph>
-                                    <strong>Customer:</strong> <Tag>{customer.customer}</Tag>
-                                  </Paragraph>
-                                  <Paragraph>
-                                    <strong>Claimed:</strong> <Tag>{customer.is_claimed ? "Yes" : "No"}</Tag>
-                                  </Paragraph>
-                                  <Paragraph>
-                                    <strong>Requested:</strong> <Tag>{customer.is_requested ? "Yes" : "No"}</Tag>
-                                  </Paragraph>
-                                  <Paragraph>
-                                    <strong>Verified:</strong> <Tag>{customer.is_verified ? "Yes" : "No"}</Tag>
-                                  </Paragraph>
-                                  <Paragraph>
-                                    <strong>Premium Paid:</strong> <Tag>{customer.premium_paid ? "Yes" : "No"}</Tag>
-                                  </Paragraph>
-                                </div>
-                              ))}
-                            </Card>
-                          ) : (
-                            <Paragraph>No Customers Found for this Policy. </Paragraph>
-                          )}
-
-                          <Button
-                            onClick={() => handleRequestClaim({ policy_id: policy.id })}
-                            variant="submit"
-                            size="lg"
-                            className="text-base w-full m-1"
-                            type="submit"
-                          >
-                            Request Claim
-                          </Button>
-                        </div>
+                    <p className="text-sm text-gray-500 mb-4">Job ID: {job.id}</p>
+                    <Paragraph>
+                      <strong>Title:</strong> {job.title}
+                    </Paragraph>
+                    <Paragraph>
+                      <strong>Employer:</strong> <Tag>{job.employer}</Tag>
+                    </Paragraph>
+                    <Paragraph>
+                      <strong>Finder's Fee:</strong>{" "}
+                      <Tag>{convertAmountFromOnChainToHumanReadable(job.finders_fee, 8)}</Tag>
+                    </Paragraph>
+                    <Paragraph>
+                      <strong>Description:</strong> {job.description}
+                    </Paragraph>
+                    <Paragraph>
+                      <strong>Referrals:</strong>
+                      {job.referrals.length > 0 ? (
+                        <Card style={{ marginTop: 16, padding: 16 }}>
+                          {job.referrals.map((referral, idx) => (
+                            <div key={idx} className="mb-4">
+                              <Paragraph>
+                                <strong>Candidate:</strong> <Tag>{referral.candidate}</Tag>
+                              </Paragraph>
+                              <Paragraph>
+                                <strong>Hired:</strong> <Tag>{referral.is_hired ? "Yes" : "No"}</Tag>
+                              </Paragraph>
+                              <Paragraph>
+                                <strong>Referral Message:</strong> {referral.referral_message}
+                              </Paragraph>
+                              <Paragraph>
+                                <strong>Referrer:</strong> <Tag>{referral.referrer}</Tag>
+                              </Paragraph>
+                            </div>
+                          ))}
+                        </Card>
+                      ) : (
+                        <Paragraph>No Referrals Found for this Job.</Paragraph>
                       )}
-                    </Card>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardDescription>Get All Policies on Platform</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="p-2">
-                {policies.map((policy, index) => (
-                  <Card key={index} className="mb-6 shadow-lg p-4">
-                    <p className="text-sm text-gray-500 mb-4">Policy ID: {policy.id}</p>
-                    <Card style={{ marginTop: 16, padding: 16 }}>
-                      {policy && (
-                        <div>
-                          <Paragraph>
-                            <strong>Type:</strong> {policy.type_of_policy}
-                          </Paragraph>
-                          <Paragraph>
-                            <strong>Creator:</strong> <Tag>{policy.creator}</Tag>
-                          </Paragraph>
-                          <Paragraph>
-                            <strong>Premium Amount:</strong>{" "}
-                            <Tag>{convertAmountFromOnChainToHumanReadable(policy.premium_amount, 8)}</Tag>
-                          </Paragraph>
-
-                          <Paragraph>
-                            <strong>Description:</strong> {policy.description}
-                          </Paragraph>
-
-                          <Paragraph>
-                            <strong>Claimable Amount:</strong>{" "}
-                            <Tag>{convertAmountFromOnChainToHumanReadable(policy.max_claimable, 8)}</Tag>
-                          </Paragraph>
-
-                          <Paragraph>
-                            <strong>Total Premium Collected:</strong>{" "}
-                            <Tag>{convertAmountFromOnChainToHumanReadable(policy.total_premium_collected, 8)}</Tag>
-                          </Paragraph>
-
-                          <Paragraph>
-                            <strong>Payment Type:</strong> <Tag>{policy.customers.length}</Tag>
-                          </Paragraph>
-
-                          <Paragraph>
-                            <strong>Total Customers</strong> <Tag>{policy.yearly ? "Annually" : "Once"}</Tag>
-                          </Paragraph>
-
-                          {policy.customers.length > 0 ? (
-                            <Card style={{ marginTop: 16, padding: 16 }}>
-                              {policy.customers.map((customer, idx) => (
-                                <div key={idx} className="mb-4">
-                                  <Paragraph>
-                                    <strong>Customer:</strong> <Tag>{customer.customer}</Tag>
-                                  </Paragraph>
-                                  <Paragraph>
-                                    <strong>Claimed:</strong> <Tag>{customer.is_claimed ? "Yes" : "No"}</Tag>
-                                  </Paragraph>
-                                  <Paragraph>
-                                    <strong>Requested:</strong> <Tag>{customer.is_requested ? "Yes" : "No"}</Tag>
-                                  </Paragraph>
-                                  <Paragraph>
-                                    <strong>Verified:</strong> <Tag>{customer.is_verified ? "Yes" : "No"}</Tag>
-                                  </Paragraph>
-                                  <Paragraph>
-                                    <strong>Premium Paid:</strong> <Tag>{customer.premium_paid ? "Yes" : "No"}</Tag>
-                                  </Paragraph>
-                                </div>
-                              ))}
-                            </Card>
-                          ) : (
-                            <Paragraph>No Customers Found for this Policy. </Paragraph>
-                          )}
-                        </div>
-                      )}
-                    </Card>
+                    </Paragraph>
                   </Card>
                 ))}
               </div>
