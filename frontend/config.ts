@@ -5,9 +5,9 @@ import Placeholder3 from "@/assets/placeholders/bear-3.png";
 export const config: Config = {
   // Removing one or all of these socials will remove them from the page
   socials: {
-    twitter: "https://twitter.com/kunaldhongade",
-    discord: "https://discord.com",
-    homepage: "https://kunaldhongade.vercel.app",
+    twitter: "https://twitter.com/jobreferralsplatform",
+    discord: "https://discord.com/jobreferrals",
+    homepage: "https://jobreferralsplatform.com",
   },
 
   defaultCollection: {
@@ -21,7 +21,7 @@ export const config: Config = {
     subTitle: "Innovative Job Referral Platform on Aptos",
     description:
       "Our platform connects job seekers with potential employers through trusted referrals. We aim to create a transparent and efficient job market. Join our community to get started!",
-    discordLink: "https://discord.com",
+    discordLink: "https://discord.com/jobreferrals",
     images: [Placeholder1, Placeholder2, Placeholder3],
   },
 
@@ -29,24 +29,24 @@ export const config: Config = {
     title: "Our Team",
     members: [
       {
-        name: "Kunal",
+        name: "Alex",
         role: "Blockchain Developer",
         img: Placeholder1,
         socials: {
-          twitter: "https://twitter.com/kunaldhongade",
+          twitter: "https://twitter.com/",
         },
       },
       {
-        name: "Soham",
+        name: "Jordan",
         role: "Marketing Specialist",
         img: Placeholder2,
       },
       {
-        name: "Amrita",
+        name: "Taylor",
         role: "Community Manager",
         img: Placeholder3,
         socials: {
-          twitter: "https://twitter.com",
+          twitter: "https://twitter.com/",
         },
       },
     ],
